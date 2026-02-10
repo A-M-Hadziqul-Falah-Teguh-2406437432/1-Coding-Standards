@@ -1,4 +1,4 @@
-# Refleksi Modul - Aplikasi E-Shop
+# Refleksi 1 Modul - Aplikasi E-Shop
 
 ## Standar & Prinsip Coding yang Diterapkan
 
