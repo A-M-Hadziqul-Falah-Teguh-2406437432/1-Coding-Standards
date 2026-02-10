@@ -46,7 +46,7 @@ dependencies {
 }
 
 tasks.withType<Test>().configureEach {
-    useJUnitPlatform()
+	useJUnitPlatform()
 }
 
 tasks.register<Test>("unitTest") {
