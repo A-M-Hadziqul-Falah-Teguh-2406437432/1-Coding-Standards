@@ -58,3 +58,60 @@ Aplikasi belum ngecek input dari user. Jadi user bisa aja bikin produk dengan na
 -   Di Controller, jangan lupa pakai `@Valid` dan tangani errornya lewat `BindingResult`
 
 ---
+
+# Refleksi 2 Modul - Testing dan Code Quality
+
+## 1. Unit Testing dan Code Coverage
+
+### Perasaan setelah menulis Unit Test
+Setelah menulis unit test, rasanya jauh lebih percaya diri. Kita jadi punya jaring pengaman yang memastikan kalau fitur yang kita buat (seperti Edit dan Delete) jalan sesuai rencana, baik saat skenario normal maupun saat ada input yang aneh-aneh (edge cases).
+
+### Berapa banyak Unit Test dalam satu Class?
+Sebenarnya nggak ada angka pasti harus berapa. Yang penting adalah **kualitas dan cakupannya**, bukan jumlahnya. Makin kompleks logika di dalam class, makin banyak variasi test yang dibutuhkan.
+
+### Apakah Unit Test sudah cukup untuk verifikasi program?
+Belum tentu. Unit test itu cuma ngecek bagian-bagian kecil (unit) secara terisolasi. Kita masih butuh:
+-   **Integration Test:** Buat mastiin unit-unit yang beda itu bisa kerja bareng (misal Service ngobrol sama Repository).
+-   **Functional/E2E Test:** Buat mastiin alur aplikasi dari sudut pandang user (seperti yang kita buat pake Selenium).
+-   **Manual Testing:** Kadang ada hal visual atau UX yang susah ditangkep sama automated test.
+
+### Tentang Code Coverage 100%
+Punya 100% code coverage itu bagus karena artinya setiap baris kode kita pernah dieksekusi setidaknya sekali selama testing. **TAPI**, 100% coverage **TIDAK MENJAMIN** bebas bug.
+-   Coverage cuma ngukur kuantitas (baris yang tersentuh), bukan kualitas logika test-nya.
+-   Bisa aja barisnya tereksekusi tapi assertion-nya (pengecekannya) salah atau kurang lengkap.
+-   Bug logika bisnis (logic error) seringkali nggak ketangkep cuma dengan coverage tinggi.
+
+## 2. Refleksi tentang Functional Test Baru (Code Cleanliness)
+
+### Masalah Duplikasi Kode
+Kalau saya membuat class functional test baru untuk menghitung jumlah item (`CountItemFunctionalTest.java`) dengan menyalin prosedur setup dan variabel instance dari `CreateProductFunctionalTest.java`, itu akan melanggar prinsip **DRY (Don't Repeat Yourself)**.
+
+**Isu Kebersihan Kode (Clean Code Issues):**
+1.  **Duplikasi Setup:** Kode untuk setup server, port, dan base URL akan ditulis ulang di setiap class test.
+2.  **Susah Maintain:** Kalau nanti cara setup server berubah (misal ganti config port), kita harus ubah di banyak file satu-satu.
+3.  **Readability Menurun:** Fokus test jadi terganggu karena banyak kode boilerplate setup yang sama berulang-ulang.
+
+### Saran Perbaikan
+Untuk menjaga kode tetap bersih dan mudah dirawat, sebaiknya kita pakai **Inheritance (Pewarisan)** atau membuat **Base Test Class**.
+
+**Solusi:**
+Buat satu class abstrak, misalnya `BaseFunctionalTest.java`, yang isinya semua konfigurasi umum:
+```java
+@SpringBootTest(webEnvironment = RANDOM_PORT)
+@ExtendWith(SeleniumJupiter.class)
+abstract class BaseFunctionalTest {
+    @LocalServerPort
+    protected int serverPort;
+
+    @Value("${app.baseUrl:http://localhost}")
+    protected String testBaseUrl;
+
+    protected String baseUrl;
+
+    @BeforeEach
+    void setupTest() {
+        baseUrl = String.format("%s:%d", testBaseUrl, serverPort);
+    }
+}
+```
+Terus, test class lainnya (`CreateProductFunctionalTest`, `HomePageFunctionalTest`, dll) tinggal **extends** class ini. Jadi mereka cuma fokus ke logic test-nya aja, nggak perlu mikirin setup lagi.
